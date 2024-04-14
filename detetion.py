@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-
-
+import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 import time
@@ -25,9 +24,6 @@ def remove_small_segments(image, min_area):
 
     return mask
 
-
-
-
 # Set the output video dimensions and frame rate. Using half of screen
 screen_width, screen_height = pyautogui.size()
 output_width, output_height = int(screen_width // 2), int(screen_height // 2)
@@ -35,17 +31,19 @@ fps = 30
 
 # Define the monitor to capture (right now is full screen)
 # Starting coordenates
-top = 0
-left = 0
+top = 450
+left = 890
 # Lenght
-width = screen_width-top
-height = screen_height-left
+width=590-top
+height=1039-left
+#width = screen_width-top
+#height = screen_height-left
 monitor_to_capture = {"top": top, "left": left, "width": width, "height": height}  
 # Example for part of primary monitor. It depends on the setup used
 
 
-template = cv2.imread('template.png')
-cv2.imshow('Template', template)
+template = cv2.imread('template2.png')
+#cv2.imshow('Template', template)
 template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
 # Get dimensions of the template
 template_height, template_width = template_gray.shape[::-1]
@@ -80,7 +78,7 @@ with mss.mss() as sct:
             result = cv2.matchTemplate(frame_gray, template_gray, cv2.TM_CCOEFF_NORMED )
 
             # Define a threshold to find matches
-            threshold = 0.6
+            threshold = 0.4
             locations = np.where(result >= threshold)
 
             # Create a mask with the same dimensions as the main image
@@ -118,13 +116,15 @@ with mss.mss() as sct:
 
         y, x = np.unravel_index(np.argmax(correspondence), correspondence.shape)
 
-        #if correspondence[y,x] > th
-        # Draw a cross
-        cross_size = 10
-        line_color = (0, 0, 255)  # Red color for the cross
-        line_width = 2
-        cv2.line(frame_gray, (x - cross_size, y), (x + cross_size, y), line_color, line_width)
-        cv2.line(frame_gray, (x, y - cross_size), (x, y + cross_size), line_color, line_width)
+        th=163
+        if correspondence[y,x] > th:
+            # Draw a cross
+            cross_size = 10
+            line_color = (0, 0, 255)  # Red color for the cross
+            line_width = 2
+            cv2.line(frame_gray, (x - cross_size, y), (x + cross_size, y), line_color, line_width)
+            cv2.line(frame_gray, (x, y - cross_size), (x, y + cross_size), line_color, line_width)
+            plt.text(y, x, "detecao", color='red')
         
         # Display the correspondence
         cv2.imshow('Frame', frame_gray)
