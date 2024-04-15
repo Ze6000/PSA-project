@@ -75,31 +75,42 @@ while True:
     mask2 = cv2.dilate(mask2, kernel, iterations=3)
 
     correspondence = cv2.bitwise_and(frame_gray, mask2)
-    #print(np.argmax(correspondence))
+    # y, x = np.unravel_index(np.argmax(correspondence), correspondence.shape)
 
-    y, x = np.unravel_index(np.argmax(correspondence), correspondence.shape)
+    
+    # Define the parameters for mean shift segmentation
+    spatial_radius = 5
+    color_radius = 10
+    min_density = 100
+
+    # Perform mean shift segmentation
+    frame_rgb = cv2.cvtColor(correspondence, cv2.COLOR_GRAY2RGB)
+    segmented_image = cv2.pyrMeanShiftFiltering(frame_rgb, spatial_radius, color_radius, min_density)
+
+    # Convert the segmented image to grayscale
+    segmented_gray = cv2.cvtColor(segmented_image, cv2.COLOR_BGR2GRAY)
+    y, x = np.unravel_index(np.argmax(segmented_gray), segmented_gray.shape)
+
 
     th=190
-    if correspondence[y,x] > th:
+    if segmented_gray[y,x] > th:
         cv2.imwrite('Fuga 1.png', frame_gray)
-        # Draw a cross
-        cross_size = 10
-        line_color = (0, 0, 255)  # Red color for the cross
-        line_width = 2
+
+        line_color = (0, 0, 255)  # Red color 
         text = "Fuga Detetada"  # Text you want to add
         font = cv2.FONT_HERSHEY_DUPLEX
         font_scale = 0.5
         font_color = (255, 255, 255)  # White color for text
         text_thickness = 1
-        text_padding = 5  # Padding between cross and text
+        text_padding = 5  
+        top_left = (x - 10, y - 10)
+        bottom_right = (x + 10, y + 10)
 
+        cv2.rectangle(frame_gray, top_left, bottom_right, line_color)
 
-
-        cv2.line(frame_gray, (x - cross_size, y), (x + cross_size, y), line_color, line_width)
-        cv2.line(frame_gray, (x, y - cross_size), (x, y + cross_size), line_color, line_width)
         text_size = cv2.getTextSize(text, font, font_scale, text_thickness)[0]
         text_x = x - text_size[0] // 2
-        text_y = y + cross_size + text_size[1] + text_padding
+        text_y = y + 10 + text_size[1] + text_padding
         cv2.putText(frame_gray, text, (text_x, text_y), font, font_scale, font_color, text_thickness)
 
         # cv2.imshow('Fuga detetada', frame_gray)
@@ -107,6 +118,11 @@ while True:
     
     # Display the correspondence
     cv2.imshow('Frame', frame_gray)
+    # cv2.imshow('Mask', mask)
+    # cv2.imshow('Mask2', mask2)
+
+
+
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
@@ -114,5 +130,7 @@ while True:
 
     # Pause to control frame rate
     # time.sleep(1/(frame_rate*4))
+
+
 cap.release()
 cv2.destroyAllWindows()
