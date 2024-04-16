@@ -12,8 +12,6 @@ import pyautogui
 def remove_small_segments(image, min_area):
     # Find connected components and their statistics
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(image, connectivity=8)
-
-    # Initialize mask to keep track of segments to keep
     mask = np.zeros_like(labels, dtype=np.uint8)
 
     # Iterate through components and filter based on area
@@ -39,7 +37,7 @@ height=1039-left
 #width = screen_width-top
 #height = screen_height-left
 monitor_to_capture = {"top": top, "left": left, "width": width, "height": height}  
-# Example for part of primary monitor. It depends on the setup used
+# Example for part of secondary monitor. It depends on the setup used
 
 
 template = cv2.imread('template2.png')
@@ -49,8 +47,6 @@ template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
 template_height, template_width = template_gray.shape[::-1]
 
 
-# cap = cv2.VideoCapture('Algoritmo para localização de fugas/Videos/IR/Video_80_05mm_1m_IR.mp4')
-# frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 
 i=0
 with mss.mss() as sct:
@@ -98,12 +94,12 @@ with mss.mss() as sct:
 
         mask2 = cv2.bitwise_and(mask, mask2)
         
-        kernel = np.ones((3, 3), np.uint8)  # You can adjust the size of the kernel as needed
+        kernel = np.ones((3, 3), np.uint8)  # Can be adjusted as needed
     
         # Apply erosion
         mask2 = cv2.erode(mask2, kernel, iterations=2)
 
-        min_area = 800  # Adjust this value according to your requirement
+        min_area = 800  # This value must be ajusted according to component requirement
 
         # Remove small segments
         mask2 = remove_small_segments(mask2, min_area)
@@ -118,13 +114,27 @@ with mss.mss() as sct:
 
         th=163
         if correspondence[y,x] > th:
-            # Draw a cross
-            cross_size = 10
-            line_color = (0, 0, 255)  # Red color for the cross
-            line_width = 2
-            cv2.line(frame_gray, (x - cross_size, y), (x + cross_size, y), line_color, line_width)
-            cv2.line(frame_gray, (x, y - cross_size), (x, y + cross_size), line_color, line_width)
-            plt.text(y, x, "detecao", color='red')
+            cv2.imwrite('Fuga 1.png', frame_gray)
+
+            line_color = (0, 0, 255)  # Red color 
+            text = "Fuga Detetada"  
+            font = cv2.FONT_HERSHEY_DUPLEX
+            font_scale = 0.5
+            font_color = (255, 255, 255)  # White color for text
+            text_thickness = 1
+            text_padding = 5  
+            top_left = (x - 10, y - 10)
+            bottom_right = (x + 10, y + 10)
+
+            cv2.rectangle(frame_gray, top_left, bottom_right, line_color)
+
+            text_size = cv2.getTextSize(text, font, font_scale, text_thickness)[0]
+            text_x = x - text_size[0] // 2
+            text_y = y + 10 + text_size[1] + text_padding
+            cv2.putText(frame_gray, text, (text_x, text_y), font, font_scale, font_color, text_thickness)
+
+            # cv2.imshow('Fuga detetada', frame_gray)
+            cv2.imwrite('Fuga 1_legenda.png', frame_gray)
         
         # Display the correspondence
         cv2.imshow('Frame', frame_gray)
