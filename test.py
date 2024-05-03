@@ -5,6 +5,7 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 import time
+import os
 
 def remove_small_segments(image, min_area):
     # Find connected components and their statistics
@@ -21,14 +22,21 @@ def remove_small_segments(image, min_area):
 
     return mask
 
-template = cv2.imread('template.png')
+folder = "Files for processing"
+
+# Create full paths for the image and video files
+template_path = os.path.join(folder, "template.png")
+video_path = os.path.join(folder, "varias_fugas.mp4")
+
+
+template = cv2.imread(template_path)
 template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
 
 # Get dimensions of the template
 template_height, template_width = template_gray.shape[::-1]
 
-cap = cv2.VideoCapture('Video_80_05mm_1m_IR.mp4')
-cap = cv2.VideoCapture('varias_fugas.mp4')
+# cap = cv2.VideoCapture("Video_80_05mm_1m_IR.mp4")
+cap = cv2.VideoCapture(video_path)
 frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 
 n_leaks=0
@@ -102,7 +110,12 @@ while True:
     th=180
     if segmented_gray[y,x] > th and [y,x] not in coord_leaks:
         n_leaks = n_leaks + 1
-        cv2.imwrite('Fuga 1.png', frame_gray)
+        
+        # Saving the leak without caption
+        filename = f"Fuga_{n_leaks}.png"
+        save_folder = "Leaks"
+        full_path = os.path.join(save_folder, filename)
+        cv2.imwrite(full_path, frame_gray)
 
         line_color = (0, 0, 255)  # Red color 
         text = "Fuga Detetada"  # Text you want to add
@@ -121,8 +134,10 @@ while True:
         text_y = y + 10 + text_size[1] + text_padding
         cv2.putText(frame_gray, text, (text_x, text_y), font, font_scale, font_color, text_thickness)
 
-        # cv2.imshow('Fuga detetada', frame_gray)
-        cv2.imwrite('Fuga 1_legenda.png', frame_gray)
+        
+        filename = f"Fuga_{n_leaks}_legenda.png"
+        full_path = os.path.join(save_folder, filename)
+        cv2.imwrite(full_path, frame_gray)
         
         # Erase a square area around a specific point
         # Iterate through the area and set pixels to black
@@ -140,9 +155,9 @@ while True:
     
     
     # Display the correspondence
-    cv2.imshow('Frame', frame_gray)
+    cv2.imshow("Frame", frame_gray)
     # cv2.imshow('Mask', mask)
-    cv2.imshow('Mask2', mask2)
+    cv2.imshow("Mask2", mask2)
     
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -152,6 +167,5 @@ while True:
     # Pause to control frame rate
     # time.sleep(1/(frame_rate*4))
 
-print(coord_leaks)
 cap.release()
 cv2.destroyAllWindows()
