@@ -150,6 +150,4 @@ with mss.mss() as sct:
         if os.path.exists('monitor_recording.avi'):
             os.remove('monitor_recording.avi')
 
-
-
 cv2.destroyAllWindows()

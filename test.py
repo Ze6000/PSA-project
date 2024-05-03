@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+
 import cv2
 from matplotlib import pyplot as plt
 import numpy as np
@@ -25,8 +28,11 @@ template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
 template_height, template_width = template_gray.shape[::-1]
 
 cap = cv2.VideoCapture('Video_80_05mm_1m_IR.mp4')
+cap = cv2.VideoCapture('varias_fugas.mp4')
 frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 
+n_leaks=0
+coord_leaks= []
 i=0
 while True:
     ret, frame = cap.read()
@@ -41,7 +47,7 @@ while True:
         result = cv2.matchTemplate(frame_gray, template_gray, cv2.TM_CCOEFF_NORMED )
 
         # Define a threshold to find matches
-        threshold = 0.6
+        threshold = 0.66
         locations = np.where(result >= threshold)
 
         # Create a mask with the same dimensions as the main image
@@ -74,6 +80,7 @@ while True:
     # Apply dilation
     mask2 = cv2.dilate(mask2, kernel, iterations=3)
 
+    
     correspondence = cv2.bitwise_and(frame_gray, mask2)
     # y, x = np.unravel_index(np.argmax(correspondence), correspondence.shape)
 
@@ -92,8 +99,9 @@ while True:
     y, x = np.unravel_index(np.argmax(segmented_gray), segmented_gray.shape)
 
 
-    th=190
-    if segmented_gray[y,x] > th:
+    th=180
+    if segmented_gray[y,x] > th and [y,x] not in coord_leaks:
+        n_leaks = n_leaks + 1
         cv2.imwrite('Fuga 1.png', frame_gray)
 
         line_color = (0, 0, 255)  # Red color 
@@ -115,14 +123,27 @@ while True:
 
         # cv2.imshow('Fuga detetada', frame_gray)
         cv2.imwrite('Fuga 1_legenda.png', frame_gray)
+        
+        # Erase a square area around a specific point
+        # Iterate through the area and set pixels to black
+        if n_leaks > 0:
+            for dx in range(-10, 10 + 1):
+                for dy in range(-10, 10 + 1):
+                    # Determine the new coordinates
+                    X = x + dx
+                    Y = y + dy
+                    
+                    # Check if the new coordinates are within the bounds of the image
+                    if 0 <= X < mask2.shape[1] and 0 <= Y < mask2.shape[0]:
+                        # Add those coordinates to the list of leaks
+                        coord_leaks.append([Y,X])
+    
     
     # Display the correspondence
     cv2.imshow('Frame', frame_gray)
     # cv2.imshow('Mask', mask)
-    # cv2.imshow('Mask2', mask2)
-
-
-
+    cv2.imshow('Mask2', mask2)
+    
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
@@ -131,6 +152,6 @@ while True:
     # Pause to control frame rate
     # time.sleep(1/(frame_rate*4))
 
-
+print(coord_leaks)
 cap.release()
 cv2.destroyAllWindows()
