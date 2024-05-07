@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import time
 import os
+import shutil
 
 def remove_small_segments(image, min_area):
     # Find connected components and their statistics
@@ -23,10 +24,13 @@ def remove_small_segments(image, min_area):
     return mask
 
 folder = "Files for processing"
-
 # Create full paths for the image and video files
 template_path = os.path.join(folder, "template.png")
 video_path = os.path.join(folder, "varias_fugas.mp4")
+
+
+shutil.rmtree("Leaks")  # Deletes the entire folder of leaks
+os.makedirs("Leaks")  # Recreate the empty folder
 
 
 template = cv2.imread(template_path)
@@ -107,18 +111,18 @@ while True:
     y, x = np.unravel_index(np.argmax(segmented_gray), segmented_gray.shape)
 
 
-    th=180
+    th=185
     if segmented_gray[y,x] > th and [y,x] not in coord_leaks:
         n_leaks = n_leaks + 1
         
         # Saving the leak without caption
-        filename = f"Fuga_{n_leaks}.png"
+        filename = f"Leak_{n_leaks}.png"
         save_folder = "Leaks"
         full_path = os.path.join(save_folder, filename)
         cv2.imwrite(full_path, frame_gray)
 
         line_color = (0, 0, 255)  # Red color 
-        text = "Fuga Detetada"  # Text you want to add
+        text = "Leak Detected"  # Caption
         font = cv2.FONT_HERSHEY_DUPLEX
         font_scale = 0.5
         font_color = (255, 255, 255)  # White color for text
@@ -135,7 +139,7 @@ while True:
         cv2.putText(frame_gray, text, (text_x, text_y), font, font_scale, font_color, text_thickness)
 
         
-        filename = f"Fuga_{n_leaks}_legenda.png"
+        filename = f"Leak_{n_leaks}_caption.png"
         full_path = os.path.join(save_folder, filename)
         cv2.imwrite(full_path, frame_gray)
         

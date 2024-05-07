@@ -7,7 +7,7 @@ import time
 import mss
 import os
 import pyautogui
-
+import shutil
 
 def remove_small_segments(image, min_area):
     # Find connected components and their statistics
@@ -27,27 +27,32 @@ screen_width, screen_height = pyautogui.size()
 output_width, output_height = int(screen_width // 2), int(screen_height // 2)
 fps = 30
 
-# Define the monitor to capture (right now is full screen)
+# Define the area to capture 
 # Starting coordenates
-top = 450
-left = 890
+top = 0
+left = 0
 # Lenght
 width=590-top
-height=1039-left
-#width = screen_width-top
-#height = screen_height-left
+height=590-left
+# width = screen_width-top
+# height = screen_height-left
 monitor_to_capture = {"top": top, "left": left, "width": width, "height": height}  
 # Example for part of secondary monitor. It depends on the setup used
 
-
-template = cv2.imread('template2.png')
+folder = "Files for processing"
+# Create full paths for the image and video files
+template_path = os.path.join(folder, "template.png")
+template = cv2.imread(template_path)
 #cv2.imshow('Template', template)
 template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
 # Get dimensions of the template
 template_height, template_width = template_gray.shape[::-1]
 
+shutil.rmtree("Leaks")  # Deletes the entire folder of leaks
+os.makedirs("Leaks")  # Recreate the empty folder with the same name
 
-
+n_leaks = 0
+coord_leaks = []
 i=0
 with mss.mss() as sct:
     while True:
@@ -107,17 +112,37 @@ with mss.mss() as sct:
         # Apply dilation
         mask2 = cv2.dilate(mask2, kernel, iterations=3)
 
+
         correspondence = cv2.bitwise_and(frame_gray, mask2)
         #print(np.argmax(correspondence))
 
-        y, x = np.unravel_index(np.argmax(correspondence), correspondence.shape)
+
+        # Define the parameters for mean shift segmentation
+        spatial_radius = 5
+        color_radius = 10
+        min_density = 100
+
+        # Perform mean shift segmentation
+        frame_rgb = cv2.cvtColor(correspondence, cv2.COLOR_GRAY2RGB)
+        segmented_image = cv2.pyrMeanShiftFiltering(frame_rgb, spatial_radius, color_radius, min_density)
+
+        # Convert the segmented image to grayscale
+        segmented_gray = cv2.cvtColor(segmented_image, cv2.COLOR_BGR2GRAY)
+        y, x = np.unravel_index(np.argmax(segmented_gray), segmented_gray.shape)
+
 
         th=163
-        if correspondence[y,x] > th:
-            cv2.imwrite('Fuga 1.png', frame_gray)
+        if segmented_gray[y,x] > th and [y,x] not in coord_leaks:
+            n_leaks = n_leaks + 1
+            
+            # Saving the leak without caption
+            filename = f"Leak_{n_leaks}.png"
+            save_folder = "Leaks"
+            full_path = os.path.join(save_folder, filename)
+            cv2.imwrite(full_path, frame_gray)
 
             line_color = (0, 0, 255)  # Red color 
-            text = "Fuga Detetada"  
+            text = "Leak Detected"  # Caption
             font = cv2.FONT_HERSHEY_DUPLEX
             font_scale = 0.5
             font_color = (255, 255, 255)  # White color for text
@@ -133,8 +158,24 @@ with mss.mss() as sct:
             text_y = y + 10 + text_size[1] + text_padding
             cv2.putText(frame_gray, text, (text_x, text_y), font, font_scale, font_color, text_thickness)
 
-            # cv2.imshow('Fuga detetada', frame_gray)
-            cv2.imwrite('Fuga 1_legenda.png', frame_gray)
+            
+            filename = f"Leak_{n_leaks}_caption.png"
+            full_path = os.path.join(save_folder, filename)
+            cv2.imwrite(full_path, frame_gray)
+            
+            # Erase a square area around a specific point
+            # With this, it won't find the same leak twice
+            if n_leaks > 0:
+                for dx in range(-10, 10 + 1):
+                    for dy in range(-10, 10 + 1):
+                        # Determine the new coordinates
+                        X = x + dx
+                        Y = y + dy
+                        
+                        # Check if the new coordinates are within the bounds of the image
+                        if 0 <= X < mask2.shape[1] and 0 <= Y < mask2.shape[0]:
+                            # Add those coordinates to the list of leaks
+                            coord_leaks.append([Y,X])
         
         # Display the correspondence
         cv2.imshow('Frame', frame_gray)
