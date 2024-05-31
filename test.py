@@ -26,7 +26,7 @@ def remove_small_segments(image, min_area):
 folder = "Files for processing"
 # Create full paths for the image and video files
 template_path = os.path.join(folder, "template.png")
-video_path = os.path.join(folder, "varias_fugas.mp4")
+video_path = os.path.join(folder, "LinhaMontagem x2.mp4")
 
 
 shutil.rmtree("Leaks")  # Deletes the entire folder of leaks
@@ -43,6 +43,10 @@ template_height, template_width = template_gray.shape[::-1]
 cap = cv2.VideoCapture(video_path)
 frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 
+previous_frame = 0
+current_frame = 0
+current_component = 0
+
 n_leaks=0
 coord_leaks= []
 i=0
@@ -53,21 +57,21 @@ while True:
     # Convert the frame to grayscale
     
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    frame_height, frame_width = frame_gray.shape[::-1]
+    
+    # Perform template matching
+    result = cv2.matchTemplate(frame_gray, template_gray, cv2.TM_CCOEFF_NORMED )
 
-    if i==0:
-        # Perform template matching
-        result = cv2.matchTemplate(frame_gray, template_gray, cv2.TM_CCOEFF_NORMED )
+    # Define a threshold to find matches
+    threshold = 0.60
+    locations = np.where(result >= threshold)
 
-        # Define a threshold to find matches
-        threshold = 0.66
-        locations = np.where(result >= threshold)
+    # Create a mask with the same dimensions as the main image
+    mask = np.zeros_like(frame_gray)
 
-        # Create a mask with the same dimensions as the main image
-        mask = np.zeros_like(frame_gray)
-
-        # Mark the detected regions in the mask
-        for loc in zip(*locations[::-1]):
-            cv2.rectangle(mask, loc, (loc[0] + template_width, loc[1] + template_height), 255, -1)
+    # Mark the detected regions in the mask
+    for loc in zip(*locations[::-1]):
+        cv2.rectangle(mask, loc, (loc[0] + template_width, loc[1] + template_height), 255, -1)
 
     correspondence = cv2.bitwise_and(frame_gray, mask)
 
@@ -116,7 +120,7 @@ while True:
         n_leaks = n_leaks + 1
         
         # Saving the leak without caption
-        filename = f"Leak_{n_leaks}.png"
+        filename = f"Component_{current_component}_leak_{n_leaks}.png"
         save_folder = "Leaks"
         full_path = os.path.join(save_folder, filename)
         cv2.imwrite(full_path, frame_gray)
@@ -138,15 +142,19 @@ while True:
         text_y = y + 10 + text_size[1] + text_padding
         cv2.putText(frame_gray, text, (text_x, text_y), font, font_scale, font_color, text_thickness)
 
-        
-        filename = f"Leak_{n_leaks}_caption.png"
+
+        # Saving the leak with caption
+        filename = f"Component_{current_component}_leak_{n_leaks}_caption.png"
         full_path = os.path.join(save_folder, filename)
         cv2.imwrite(full_path, frame_gray)
+        print( filename + ' saved')
+    
         
+
         # Erase a square area around a specific point
         # Iterate through the area and set pixels to black
         if n_leaks > 0:
-            for dx in range(-10, 10 + 1):
+            for dx in range(-10, 500):
                 for dy in range(-10, 10 + 1):
                     # Determine the new coordinates
                     X = x + dx
@@ -163,13 +171,35 @@ while True:
     # cv2.imshow('Mask', mask)
     cv2.imshow("Mask2", mask2)
     
+    
+    white_pixels = np.sum(mask2 == 255)
+    black_pixels = np.sum(mask2 == 0)
+    black_percentage = black_pixels/(black_pixels+white_pixels)
 
+    # Check if there is a component on camera and keeping track of how many have passed
+    if black_percentage > 0.995 and previous_frame == 0: 
+        n_leaks=0
+        coord_leaks= []
+        current_component = current_component + 1
+        current_frame = 1
+        print('Waiting for component nº ' + str(current_component))
+    elif black_percentage < 0.995 and previous_frame ==1:
+        current_frame = 0
+
+                
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-    i=i+1
-
+    
+    previous_frame = current_frame
+    if i == 0:
+        print('Press any key to start')
+        cv2.waitKey(0)
+        i = i+1
+    
+    
     # Pause to control frame rate
     # time.sleep(1/(frame_rate*4))
 
 cap.release()
 cv2.destroyAllWindows()
+print ('All done')
