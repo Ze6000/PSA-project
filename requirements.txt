@@ -3,3 +3,5 @@ mss
 numpy
 pyautogui
 matplotlib
+paho-mqtt
+matlabengine

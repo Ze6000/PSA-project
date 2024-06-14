@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 
-
 import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 import time
 import os
 import shutil
+import paho.mqtt.client as mqtt
+import json
+import subprocess
+import atexit
+
 
 def remove_small_segments(image, min_area):
     # Find connected components and their statistics
@@ -22,6 +26,28 @@ def remove_small_segments(image, min_area):
             mask[labels == label] = 255  # Keep segment if area is greater than or equal to min_area
 
     return mask
+
+def git_push(commit_message="Auto commit by script"):
+    try:
+        # Add all changes to staging
+        subprocess.run(["git", "add", "."], check=True)
+        # Commit changes
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+        # Push changes
+        subprocess.run(["git", "push"], check=True)
+        print("Images pushed to repository.")
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred: {e}")
+
+# Register the git_push function to be called when the script exits
+# atexit.register(git_push, commit_message="Auto commit by script at script end")
+
+
+# Define the MQTT broker settings
+broker_address = "193.137.172.20"
+broker_port = 85
+topic = "detecao"  
+
 
 folder = "Files for processing"
 # Create full paths for the image and video files
@@ -50,6 +76,7 @@ current_component = 0
 n_leaks=0
 coord_leaks= []
 i=0
+data = []
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -147,12 +174,14 @@ while True:
         filename = f"Component_{current_component}_leak_{n_leaks}_caption.png"
         full_path = os.path.join(save_folder, filename)
         cv2.imwrite(full_path, frame_gray)
+        print("Pushing images to the repository...")
+        git_push("Commit images")
         print( filename + ' saved')
     
         
 
         # Erase a square area around a specific point
-        # Iterate through the area and set pixels to black
+        # Iterate through the area and remove pixels of the detection mask
         if n_leaks > 0:
             for dx in range(-10, 500):
                 for dy in range(-10, 10 + 1):
@@ -178,6 +207,34 @@ while True:
 
     # Check if there is a component on camera and keeping track of how many have passed
     if black_percentage > 0.995 and previous_frame == 0: 
+        
+        # Sending the data via MQTT
+        N_Comp = current_component
+        if n_leaks !=0:
+            Leak_Detected = 'True'
+        else:
+            Leak_Detected = 'False'
+        N_fugas = n_leaks
+
+        # Create a dictionary with the variables
+        payload = {
+            "N_Comp": N_Comp,
+            "Leak_Detected": Leak_Detected,
+            "N_fugas": N_fugas
+        }
+        data.append(payload)
+        # Convert the dictionary to a JSON string
+        payload_json = json.dumps(payload)
+
+        # Create an MQTT client and connect to broker
+        client = mqtt.Client()
+        client.connect(broker_address, broker_port)
+
+        # Publish the JSON string to the specified topic
+        client.publish(topic, payload_json)
+
+        
+
         n_leaks=0
         coord_leaks= []
         current_component = current_component + 1
@@ -200,6 +257,10 @@ while True:
     # Pause to control frame rate
     # time.sleep(1/(frame_rate*4))
 
+
+
 cap.release()
 cv2.destroyAllWindows()
-print ('All done')
+# Disconnect from the broker
+client.disconnect()
+print("All done")
