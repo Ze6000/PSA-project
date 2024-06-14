@@ -40,7 +40,7 @@ def git_push(commit_message="Auto commit by script"):
         print(f"An error occurred: {e}")
 
 # Register the git_push function to be called when the script exits
-# atexit.register(git_push, commit_message="Auto commit by script at script end")
+atexit.register(git_push, commit_message="Auto commit by script at script end")
 
 
 # Define the MQTT broker settings
