@@ -157,10 +157,15 @@ while True:
         filename = f"Component_{current_component}_leak_{n_leaks}_caption.png"
         full_path = os.path.join(save_folder, filename)
         cv2.imwrite(full_path, frame_gray)
+        if n_leaks == 1:
+            print('Leak detected')
         print( filename + ' saved')
+
+
+        # Showing the saved images
+        cv2.imshow(filename,cv2.imread(full_path))
     
         
-
         # Erase a square area around a specific point
         # Iterate through the area and remove pixels of the detection mask
         if n_leaks > 0:
@@ -214,7 +219,6 @@ while True:
         # Publish the JSON string to the specified topic
         client.publish(topic, payload_json)
 
-        
 
         n_leaks=0
         coord_leaks= []
@@ -223,6 +227,7 @@ while True:
         print('Waiting for component nº ' + str(current_component))
     elif black_percentage < 0.995 and previous_frame ==1:
         current_frame = 0
+        print('Testing component nº ' + str(current_component))
 
                 
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -230,7 +235,7 @@ while True:
     
     previous_frame = current_frame
     if i == 0:
-        print('Press any key to start')
+        # print('Press any key to start')
         cv2.waitKey(0)
         i = i+1
     
@@ -242,6 +247,7 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
+print('No more components')
 # Disconnect from the broker
 client.disconnect()
 print("All done")
