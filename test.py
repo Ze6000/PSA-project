@@ -8,6 +8,21 @@ import os
 import shutil
 import paho.mqtt.client as mqtt
 import json
+import subprocess
+import atexit
+
+
+def git_push(commit_message="Auto commit by script"):
+    try:
+        # Add all changes to staging
+        subprocess.run(["git", "add", "."], check=True)
+        # Commit changes
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+        # Push changes
+        subprocess.run(["git", "push"], check=True)
+        print("Changes pushed to remote repository.")
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred: {e}")
 
 
 
@@ -243,6 +258,9 @@ while True:
     # Pause to control frame rate
     # time.sleep(1/(frame_rate*4))
 
+
+# Register the git_push function to be called when the script exits
+atexit.register(git_push, commit_message="Saving Images in GitHub")
 
 
 cap.release()
