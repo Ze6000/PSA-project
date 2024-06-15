@@ -174,7 +174,7 @@ while True:
         if n_leaks == 1:
             print('Leak detected')
 
-        git_push("Commit after completing first part of the script")
+        git_push("Uploading new images")
         print( filename + ' saved')
 
 
