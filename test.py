@@ -9,7 +9,7 @@ import shutil
 import paho.mqtt.client as mqtt
 import json
 import subprocess
-import atexit
+
 
 
 def git_push(commit_message="Auto commit by script"):
@@ -260,9 +260,6 @@ while True:
     # Pause to control frame rate
     # time.sleep(1/(frame_rate*4))
 
-
-# Register the git_push function to be called when the script exits
-# atexit.register(git_push, commit_message="Saving Images in GitHub")
 
 
 cap.release()
