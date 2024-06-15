@@ -20,6 +20,7 @@ def git_push(commit_message="Auto commit by script"):
         subprocess.run(["git", "commit", "-m", commit_message], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         # Push changes
         subprocess.run(["git", "push"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print('Uploading new images')
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
 
@@ -261,7 +262,7 @@ while True:
 
 
 # Register the git_push function to be called when the script exits
-atexit.register(git_push, commit_message="Saving Images in GitHub")
+# atexit.register(git_push, commit_message="Saving Images in GitHub")
 
 
 cap.release()
