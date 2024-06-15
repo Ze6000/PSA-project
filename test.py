@@ -15,12 +15,11 @@ import atexit
 def git_push(commit_message="Auto commit by script"):
     try:
         # Add all changes to staging
-        subprocess.run(["git", "add", "."], check=True)
+        subprocess.run(["git", "add", "."], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         # Commit changes
-        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+        subprocess.run(["git", "commit", "-m", commit_message], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         # Push changes
-        subprocess.run(["git", "push"], check=True)
-        print("Changes pushed to remote repository.")
+        subprocess.run(["git", "push"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
 
