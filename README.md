@@ -20,3 +20,7 @@ Para instalar todas as dependencias, é só correr no terminal:
 ```
 pip install -r requirements.txt
 ```
+
+
+## Demonstração
+É possivel ver o funcionamento geral do código de visão para testes em https://youtu.be/Cqi7-2zEMSc?si=uo72SQsTsv5ViKt0
