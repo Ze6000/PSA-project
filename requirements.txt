@@ -1,7 +1,0 @@
-opencv-python
-mss
-numpy
-pyautogui
-matplotlib
-paho-mqtt
-matlabengine
